@@ -132,8 +132,6 @@ export class PDFGenerator {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     this.data.items.forEach((item) => {
-      const itemHeight = Math.max(8, this.getTextHeight(item.description, 60));
-      
       // Wrap description if needed
       const descriptionLines = doc.splitTextToSize(item.description, 60) as string[];
       
@@ -450,11 +448,6 @@ export class PDFGenerator {
       currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
-  }
-
-  private getTextHeight(text: string, maxWidth: number): number {
-    const lines = this.doc.splitTextToSize(text, maxWidth);
-    return lines.length * 5;
   }
 }
 
