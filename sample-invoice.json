@@ -1,0 +1,54 @@
+{
+  "invoiceNumber": "INV-2024-001",
+  "issueDate": "2024-01-15",
+  "dueDate": "2024-02-15",
+  "from": {
+    "name": "Acme Corporation",
+    "address": "123 Business Street",
+    "city": "New York",
+    "zip": "10001",
+    "country": "USA",
+    "email": "contact@acmecorp.com",
+    "phone": "+1 (555) 123-4567",
+    "taxId": "TAX-123456"
+  },
+  "to": {
+    "name": "Tech Solutions Inc.",
+    "address": "456 Client Avenue",
+    "city": "Los Angeles",
+    "zip": "90001",
+    "country": "USA",
+    "email": "billing@techsolutions.com",
+    "phone": "+1 (555) 987-6543"
+  },
+  "items": [
+    {
+      "description": "Web Development Services - React Application",
+      "quantity": 40,
+      "unitPrice": 150.0
+    },
+    {
+      "description": "UI/UX Design and Prototyping",
+      "quantity": 20,
+      "unitPrice": 120.0
+    },
+    {
+      "description": "Technical Consultation and Architecture",
+      "quantity": 10,
+      "unitPrice": 100.0
+    },
+    {
+      "description": "Quality Assurance and Testing",
+      "quantity": 15,
+      "unitPrice": 80.0
+    }
+  ],
+  "subtotal": 9200,
+  "tax": 920,
+  "taxRate": 10,
+  "total": 10120,
+  "currency": "USD",
+  "notes": "Thank you for your business! We appreciate your partnership. All work has been completed according to specifications. Please review the invoice and contact us if you have any questions.",
+  "paymentTerms": "Net 30 days. Payment is due within 30 days of invoice date. Late payments may incur a 2% monthly interest charge."
+}
+
