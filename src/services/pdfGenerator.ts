@@ -121,25 +121,88 @@ export class PDFGenerator {
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('Description', margin + 2, yPos - 2);
-    doc.text('Qty', margin + 100, yPos - 2);
-    doc.text('Price', margin + 115, yPos - 2);
+    const imageColWidth = 15; // Width for image column
+    doc.text('Image', margin + 2, yPos - 2);
+    doc.text('Description', margin + imageColWidth + 4, yPos - 2);
+    doc.text('Qty', margin + 95, yPos - 2);
+    doc.text('Price', margin + 110, yPos - 2);
     doc.text('Amount', pageWidth - margin - 2, yPos - 2, { align: 'right' });
 
-    yPos += 5;
+    // Add extra spacing after header to prevent image overlap
+    // Header bottom line is at yPos + 1, then add sufficient space for images
+    const headerBottomY = yPos + 1; // Bottom line of header
+    yPos = headerBottomY + 10; // Ensure enough space: 12mm image + 2mm padding = 14mm, but use 10mm to be safe
 
     // Items
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     this.data.items.forEach((item) => {
-      // Wrap description if needed
-      const descriptionLines = doc.splitTextToSize(item.description, 60) as string[];
+      const itemStartY = yPos; // Start of this item row
+      const imageSize = 12; // Size of product image in mm
       
+      // Wrap description if needed (adjust width to account for image column)
+      const descriptionStartX = margin + imageColWidth + 4;
+      const descriptionWidth = 95 - imageColWidth - 4;
+      const descriptionLines = doc.splitTextToSize(item.description, descriptionWidth) as string[];
+      
+      // Calculate row height based on description lines
+      const textHeight = descriptionLines.length * 5; // 5mm per line
+      const minRowHeight = Math.max(imageSize + 4, textHeight + 4); // At least image size + padding
+      
+      // Calculate image vertical position - ensure it's within the row boundaries
+      // Position image so it aligns with the first line of text
+      // The first line of text baseline is at itemStartY
+      // To absolutely prevent overlap with header, position images starting at itemStartY
+      // Then offset downward slightly to align better with text
+      // Text line is approximately 5mm tall, centered at itemStartY - 2.5mm
+      // Image center should be at approximately itemStartY - 2.5mm to align with text
+      // If image starts at itemStartY, its center is at itemStartY + imageSize/2 = itemStartY + 6
+      // To center with text, we need: itemStartY + offset + imageSize/2 = itemStartY - 2.5
+      // So: offset = -2.5 - 6 = -8.5, meaning imageY = itemStartY - 8.5
+      // But to prevent overlap, we clamp to not go above itemStartY - imageSize/2
+      // This allows images to start slightly above row start but limits the overlap
+      const textLineHeight = 5; // Approximate line height in mm
+      const textCenterY = itemStartY - textLineHeight / 2; // Vertical center of first text line
+      
+      // Calculate position to center image with text
+      const desiredImageCenterY = textCenterY; // Align with text center
+      const calculatedImageTop = desiredImageCenterY - imageSize / 2; // Top position for centering
+      
+      // Safety clamp: Don't let image start more than imageSize/2 above row start
+      // This prevents overlap while maintaining reasonable alignment
+      // Since we added 10mm spacing after header, this should be safe
+      const safeImageTop = itemStartY - imageSize / 2; // Maximum safe position
+      const imageY = Math.max(safeImageTop, calculatedImageTop);
+      
+      // Add product image if available
+      if (item.imageUrl) {
+        try {
+          // Try to add image (works with data URLs, base64, or URLs)
+          doc.addImage(
+            item.imageUrl,
+            'JPEG', // or 'PNG', 'JPEG' - will try to detect automatically
+            margin + 2,
+            imageY,
+            imageSize,
+            imageSize,
+            undefined,
+            'FAST' // fast rendering
+          );
+        } catch (error) {
+          // If image fails to load, draw a placeholder
+          this.drawImagePlaceholder(doc, margin + 2, imageY, imageSize, imageSize);
+        }
+      } else {
+        // Draw placeholder if no image
+        this.drawImagePlaceholder(doc, margin + 2, imageY, imageSize, imageSize);
+      }
+      
+      // Draw text content
       descriptionLines.forEach((line: string, index: number) => {
         if (index === 0) {
-          doc.text(line, margin + 2, yPos);
-          doc.text(item.quantity.toString(), margin + 100, yPos);
-          doc.text(this.formatCurrency(item.unitPrice), margin + 115, yPos);
+          doc.text(line, descriptionStartX, yPos);
+          doc.text(item.quantity.toString(), margin + 95, yPos);
+          doc.text(this.formatCurrency(item.unitPrice), margin + 110, yPos);
           doc.text(
             this.formatCurrency(item.quantity * item.unitPrice),
             pageWidth - margin - 2,
@@ -147,10 +210,16 @@ export class PDFGenerator {
             { align: 'right' }
           );
         } else {
-          doc.text(line, margin + 2, yPos);
+          doc.text(line, descriptionStartX, yPos);
         }
         yPos += 5;
       });
+
+      // Ensure minimum row height for image
+      const currentRowHeight = yPos - itemStartY;
+      if (currentRowHeight < minRowHeight) {
+        yPos = itemStartY + minRowHeight;
+      }
 
       yPos += 2;
     });
@@ -158,30 +227,36 @@ export class PDFGenerator {
     // Totals section
     yPos += 5;
     const totalsX = pageWidth - margin - 60;
+    const tableRightEdge = pageWidth - margin - 2; // Right edge of the table (where Amount column ends)
+    const totalsRightAlignX = tableRightEdge; // Right alignment position for all summary values
+    const totalBackgroundPadding = 3; // Padding on the right of the total background (mm)
 
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
+    doc.line(margin, yPos, tableRightEdge, yPos);
     yPos += 10;
 
     doc.setFontSize(9);
     doc.text('Subtotal:', totalsX, yPos);
-    doc.text(this.formatCurrency(this.data.subtotal), pageWidth - margin - 2, yPos, { align: 'right' });
+    doc.text(this.formatCurrency(this.data.subtotal), totalsRightAlignX, yPos, { align: 'right' });
 
     if (this.data.tax && this.data.tax > 0) {
       yPos += 7;
       doc.text(`Tax (${this.data.taxRate || 0}%):`, totalsX, yPos);
-      doc.text(this.formatCurrency(this.data.tax), pageWidth - margin - 2, yPos, { align: 'right' });
+      doc.text(this.formatCurrency(this.data.tax), totalsRightAlignX, yPos, { align: 'right' });
     }
 
     yPos += 10;
+    // Draw purple background - extend slightly beyond text with padding
+    const totalBackgroundRightEdge = totalsRightAlignX + totalBackgroundPadding;
+    const totalBackgroundWidth = totalBackgroundRightEdge - (totalsX - 5);
     doc.setFillColor(99, 102, 241);
-    doc.rect(totalsX - 5, yPos - 8, pageWidth - totalsX + 5, 10, 'F');
+    doc.rect(totalsX - 5, yPos - 8, totalBackgroundWidth, 10, 'F');
     
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Total:', totalsX, yPos);
-    doc.text(this.formatCurrency(this.data.total), pageWidth - margin - 2, yPos, { align: 'right' });
+    doc.text(this.formatCurrency(this.data.total), totalsRightAlignX, yPos, { align: 'right' });
 
     // Notes section
     if (this.data.notes) {
@@ -448,6 +523,28 @@ export class PDFGenerator {
       currency: currency,
       minimumFractionDigits: 2,
     }).format(amount);
+  }
+
+  private drawImagePlaceholder(doc: jsPDF, x: number, y: number, width: number, height: number): void {
+    // Draw a styled placeholder box
+    doc.setFillColor(241, 245, 249);
+    doc.rect(x, y, width, height, 'F');
+    
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.rect(x, y, width, height, 'S');
+    
+    // Draw a simple image icon using lines
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    const iconSize = width * 0.3;
+    
+    doc.setDrawColor(200, 205, 210);
+    doc.setLineWidth(0.5);
+    // Draw a simple rectangle icon
+    doc.rect(centerX - iconSize / 2, centerY - iconSize / 2, iconSize, iconSize, 'S');
+    // Draw diagonal lines to indicate image
+    doc.line(centerX - iconSize / 2, centerY - iconSize / 2, centerX + iconSize / 2, centerY + iconSize / 2);
   }
 }
 

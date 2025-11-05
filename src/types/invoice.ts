@@ -3,6 +3,7 @@ export interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   tax?: number;
+  imageUrl?: string;
 }
 
 export interface InvoiceData {

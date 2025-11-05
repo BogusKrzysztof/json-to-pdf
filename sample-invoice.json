@@ -25,22 +25,26 @@
     {
       "description": "Web Development Services - React Application",
       "quantity": 40,
-      "unitPrice": 150.0
+      "unitPrice": 150.0,
+      "imageUrl": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=200&fit=crop"
     },
     {
       "description": "UI/UX Design and Prototyping",
       "quantity": 20,
-      "unitPrice": 120.0
+      "unitPrice": 120.0,
+      "imageUrl": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=200&h=200&fit=crop"
     },
     {
       "description": "Technical Consultation and Architecture",
       "quantity": 10,
-      "unitPrice": 100.0
+      "unitPrice": 100.0,
+      "imageUrl": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200&h=200&fit=crop"
     },
     {
       "description": "Quality Assurance and Testing",
       "quantity": 15,
-      "unitPrice": 80.0
+      "unitPrice": 80.0,
+      "imageUrl": "https://images.unsplash.com/photo-1556155092-490a1ba16284?w=200&h=200&fit=crop"
     }
   ],
   "subtotal": 9200,

@@ -61,30 +61,26 @@ export default function PDFPreview({ pdfDataUri }: PDFPreviewProps) {
         printIframeRef.current = printIframe;
         document.body.appendChild(printIframe);
         
-        // Function to trigger print and cleanup
+        // Function to trigger print - NO AUTO-CLEANUP
         const triggerPrint = () => {
           try {
             if (printIframe.contentWindow) {
               printIframe.contentWindow.focus();
               printIframe.contentWindow.print();
+              // Reset flag - but DON'T clean up iframe
+              // Let the print dialog stay open until user closes it
+              // The iframe will remain in memory until page reload
+              isPrintingRef.current = false;
             }
           } catch (error) {
             console.error('Print error:', error);
-            // Fallback: try using the preview iframe
-            if (iframeRef.current?.contentWindow) {
-              iframeRef.current.contentWindow.focus();
-              iframeRef.current.contentWindow.print();
+            // Only clean up on error
+            URL.revokeObjectURL(blobUrl);
+            if (printIframe.parentNode) {
+              document.body.removeChild(printIframe);
             }
-          } finally {
-            // Clean up blob URL and iframe after a delay
-            setTimeout(() => {
-              URL.revokeObjectURL(blobUrl);
-              if (printIframe.parentNode) {
-                document.body.removeChild(printIframe);
-              }
-              printIframeRef.current = null;
-              isPrintingRef.current = false;
-            }, 1000);
+            printIframeRef.current = null;
+            isPrintingRef.current = false;
           }
         };
         
@@ -96,10 +92,10 @@ export default function PDFPreview({ pdfDataUri }: PDFPreviewProps) {
         // Wait for iframe to load, then print
         printIframe.onload = () => {
           clearTimeout(timeoutId);
-          setTimeout(triggerPrint, 200);
+          setTimeout(triggerPrint, 300);
         };
         
-        // Set src to blob URL (after setting up onload handler)
+        // Set src to blob URL
         printIframe.src = blobUrl;
       })
       .catch((error) => {
